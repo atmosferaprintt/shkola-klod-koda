@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Панель учителя</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tracker.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Панель учителя</h1>
+    <span class="sync" id="syncState"></span>
+    <span class="who"><a class="btn" href="index.html" style="text-decoration:none">К платформе ученика</a></span>
+  </header>
+
+  <div id="app" style="display:none">
+    <div class="tiles">
+      <div class="tile"><b id="tStudents">0</b><span>учеников</span></div>
+      <div class="tile hot"><b id="tActive">0</b><span>занимались за 3 дня</span></div>
+      <div class="tile"><b id="tAvg">0%</b><span>средний прогресс</span></div>
+      <div class="tile"><b id="tStuck">0</b><span>тем ждут разбора</span></div>
+    </div>
+
+    <div class="addbox">
+      <input id="nName" placeholder="имя ученика">
+      <input id="nCode" placeholder="код приглашения" style="font-family:'IBM Plex Mono',monospace;text-transform:uppercase">
+      <button class="btn" id="genCode">Придумать код</button>
+      <button class="btn acc" id="addBtn">Добавить ученика</button>
+      <span id="addMsg" style="font-size:12.5px;color:var(--dim)"></span>
+    </div>
+
+    <div class="sec-head"><h2>Ученики</h2><span>нажми на строку, чтобы раскрыть заметки и темы в работе</span></div>
+    <div id="list"></div>
+  </div>
+
+  <footer>Данные обновляются при открытии страницы. Ученик работает по своему коду, ты видишь его прогресс здесь.</footer>
+</div>
+
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-num">👩‍🏫</div>
+    <h2>Вход для учителя</h2>
+    <p>Введи учительский пин. Он задаётся один раз в базе и открывает прогресс всех учеников.</p>
+    <input id="pinInput" type="password" placeholder="пин учителя" autocomplete="off">
+    <button class="btn acc" id="pinBtn" style="width:100%;margin:0">Войти</button>
+    <div class="gate-err" id="pinErr"></div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/course.js"></script>
+<script src="js/store.js"></script>
+<script src="js/supa.js"></script>
+<script>
+let PIN = sessionStorage.getItem("klod-pin") || "";
+
+function statsFor(state){
+  const saved = Store.state;
+  Store.state = state && state.steps ? state : { student:"", steps:{}, skills:{}, notes:{} };
+  const res = {
+    pct: Store.totalPct(),
+    day: Store.currentDay().num,
+    streak: Store.streak(),
+    counts: Store.skillCounts(),
+    notes: COURSE.days.map(d=>({ num:d.num, title:d.title, text:(Store.note(d.id)||"").trim() })).filter(x=>x.text),
+    stuck: (()=>{ const a=[]; COURSE.days.forEach(d=> d.skills.forEach((s,i)=>{ if(Store.skillVal(d.id,i)===1) a.push("день "+d.num+": "+s); })); return a; })()
+  };
+  Store.state = saved;
+  return res;
+}
+function ago(iso){
+  if(!iso) return "ещё не начинал";
+  const diff = (Date.now() - new Date(iso).getTime())/86400000;
+  if(diff < 0.04) return "только что";
+  if(diff < 1) return "сегодня";
+  if(diff < 2) return "вчера";
+  return Math.floor(diff) + " дней назад";
+}
+
+async function load(){
+  try{
+    const rows = await Cloud.teacherList(PIN);
+    if(!Array.isArray(rows)) throw new Error("bad");
+    document.getElementById("gate").classList.add("off");
+    document.getElementById("app").style.display = "";
+    sessionStorage.setItem("klod-pin", PIN);
+    render(rows);
+  }catch(e){
+    document.getElementById("pinErr").textContent = "Пин не подошёл или нет связи с базой.";
+  }
+}
+
+function render(rows){
+  const data = rows.map(r=>({ ...r, s: statsFor(r.state) }));
+  document.getElementById("tStudents").textContent = data.length;
+  document.getElementById("tActive").textContent = data.filter(r=> r.updated_at && (Date.now()-new Date(r.updated_at).getTime())/86400000 < 3).length;
+  document.getElementById("tAvg").textContent = (data.length ? Math.round(data.reduce((a,b)=>a+b.s.pct,0)/data.length) : 0) + "%";
+  document.getElementById("tStuck").textContent = data.reduce((a,b)=>a+b.s.stuck.length,0);
+
+  document.getElementById("list").innerHTML = data.length ? data.map((r,i)=>
+    '<div class="st-row" data-i="'+i+'">'+
+      '<div class="st-head">'+
+        '<div class="pct">'+r.s.pct+'%</div>'+
+        '<div class="who"><b>'+(r.name||"без имени")+'</b><span>код '+r.code+' · день '+r.s.day+' из 30 · серия '+r.s.streak+'</span></div>'+
+        '<div class="meta"><b>'+ago(r.updated_at)+'</b>умею '+r.s.counts.can+' · учусь '+r.s.counts.learn+'</div>'+
+      '</div>'+
+      '<div class="st-bar"><i style="width:'+r.s.pct+'%"></i></div>'+
+      '<div class="st-body">'+
+        (r.s.stuck.length ? '<h4 class="lbl">Ждёт разбора</h4><div class="st-learn">'+r.s.stuck.map(x=>'<span>'+x+'</span>').join("")+'</div>' : '')+
+        (r.s.notes.length ? '<h4 class="lbl">Заметки по дням</h4>'+r.s.notes.map(n=>'<div class="st-note"><b>День '+n.num+' · '+n.title+'</b><span>'+n.text+'</span></div>').join("") : '<h4 class="lbl">Заметок пока нет</h4>')+
+      '</div>'+
+    '</div>').join("") : '<div class="empty">Учеников пока нет. Добавь первого сверху и передай ему код.</div>';
+
+  document.querySelectorAll(".st-head").forEach(h=> h.onclick = ()=> h.parentElement.classList.toggle("open"));
+}
+
+document.getElementById("pinBtn").onclick = ()=>{ PIN = document.getElementById("pinInput").value; load(); };
+document.getElementById("pinInput").addEventListener("keydown", e=>{ if(e.key==="Enter"){ PIN = e.target.value; load(); } });
+document.getElementById("genCode").onclick = ()=>{
+  const name = (document.getElementById("nName").value || "uchenik").trim().toUpperCase()
+    .replace(/[^A-ZА-Я]/g,"").slice(0,6) || "UCHENIK";
+  const rnd = Math.random().toString(36).slice(2,6).toUpperCase();
+  document.getElementById("nCode").value = name + "-" + rnd;
+};
+document.getElementById("addBtn").onclick = async ()=>{
+  const name = document.getElementById("nName").value.trim();
+  const code = document.getElementById("nCode").value.trim();
+  const msg = document.getElementById("addMsg");
+  if(!name || !code){ msg.textContent = "Заполни имя и код"; return; }
+  try{
+    await Cloud.teacherAdd(PIN, name, code);
+    msg.textContent = "Готово. Отправь ученику код " + code.toUpperCase();
+    document.getElementById("nName").value = ""; document.getElementById("nCode").value = "";
+    load();
+  }catch(e){ msg.textContent = "Не получилось: такой код уже занят или нет связи."; }
+};
+
+if(!Cloud.on()){
+  document.getElementById("pinErr").textContent = "База пока не подключена: вставь ключи в файл js/config.js";
+}else if(PIN){ load(); }
+</script>
+</body>
+</html>

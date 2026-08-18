@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Школа клод-кода: месяц по часу в день</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tracker.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Месяц с клод-кодом</h1>
+    <span class="sync" id="syncState"></span>
+    <span class="who"><input id="who" placeholder="имя ученика"></span>
+    <button class="btn" id="btnExit" style="display:none;margin:0">Выйти</button>
+  </header>
+
+  <nav>
+    <button data-go="month" class="on">Месяц</button>
+    <button data-go="skills">Навыки</button>
+    <button data-go="gpt">GPT</button>
+    <button data-go="res">Ресурсы</button>
+    <button data-go="gloss">Словарь</button>
+    <button data-go="report">Отчёт</button>
+  </nav>
+
+  <section class="on" id="v-month">
+    <div class="hero">
+      <div class="big" id="bigPct">0<small>%</small></div>
+      <div class="txt"><h3 id="heroT">Начни с первого дня</h3><p id="heroP"></p></div>
+      <button class="cta" id="ctaBtn">Открыть день →</button>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><b id="tDone">0</b><span>дней закрыто из 30</span></div>
+      <div class="tile hot"><b id="tStreak">0</b><span>дней подряд без пропуска</span></div>
+      <div class="tile"><b id="tHours">0</b><span>часов вложено</span></div>
+      <div class="tile"><b id="tSkills">0</b><span>навыков освоено</span></div>
+      <div class="tile"><b id="tLearn">0</b><span>тем в работе</span></div>
+    </div>
+
+    <div class="sec-head"><h2>Календарь курса</h2><span>клетка это один час. Нажми на день, чтобы открыть</span></div>
+    <div class="cal" id="cal"></div>
+  </section>
+
+  <section id="v-skills">
+    <div class="sec-head"><h2>Карта навыков</h2><span>нажми на плашку: не пробовал → учусь → умею</span></div>
+    <div id="skills"></div>
+  </section>
+
+  <section id="v-gpt">
+    <div class="sec-head"><h2>Работа с GPT</h2><span>GPT придумывает и объясняет, Claude Code делает файлы</span></div>
+    <div id="gpt"></div>
+  </section>
+
+  <section id="v-res">
+    <div class="sec-head"><h2>Ресурсы</h2><span>где брать дизайн, компоненты, шрифты, домены и базы</span></div>
+    <div id="res"></div>
+  </section>
+
+  <section id="v-gloss">
+    <div class="sec-head"><h2>Словарь</h2><span>80 профессиональных слов простыми объяснениями</span></div>
+    <input class="search" id="gSearch" placeholder="искать: домен, база, деплой...">
+    <div id="gloss"></div>
+  </section>
+
+  <section id="v-report">
+    <div class="sec-head"><h2>Отчёт учителю</h2><span>скопируй и отправь в переписку</span></div>
+    <div style="margin-bottom:16px">
+      <button class="btn acc" id="btnCopy">Скопировать отчёт</button>
+      <button class="btn" id="btnSave">Скачать прогресс</button>
+      <label class="btn" style="display:inline-block">Загрузить прогресс
+        <input type="file" id="fileLoad" accept="application/json" style="display:none"></label>
+      <button class="btn" id="btnReset">Сбросить</button>
+    </div>
+    <div class="report" id="reportBox"></div>
+  </section>
+
+  <footer>Прогресс хранится в этом браузере. Чтобы перенести на другой компьютер, скачай файл прогресса и загрузи его там.</footer>
+</div>
+
+<div class="veil" id="veil"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <div class="sh-head">
+    <div class="n" id="shN">01</div>
+    <div><h3 id="shT"></h3><p id="shL"></p></div>
+    <button id="shClose">×</button>
+  </div>
+  <div class="sh-body" id="shB"></div>
+</div>
+
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-num">30</div>
+    <h2>Школа клод-кода</h2>
+    <p>Месяц по одному часу в день. Введи код приглашения, который дал учитель, и продолжай с того места, где остановился.</p>
+    <input id="codeInput" placeholder="код приглашения" autocomplete="off" spellcheck="false">
+    <button class="btn acc" id="codeBtn" style="width:100%;margin:0">Войти</button>
+    <div class="gate-err" id="codeErr"></div>
+    <div class="gate-alt"><button id="localBtn">Заниматься без кода, только на этом компьютере</button></div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/course.js"></script>
+<script src="js/store.js"></script>
+<script src="js/supa.js"></script>
+<script src="js/tracker.js"></script>
+</body>
+</html>
