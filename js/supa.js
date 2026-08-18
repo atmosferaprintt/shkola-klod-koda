@@ -12,7 +12,8 @@ const Cloud = {
       body: JSON.stringify(body || {})
     });
     if(!r.ok) throw new Error("Ошибка связи с базой: " + r.status);
-    return r.json();
+    const text = await r.text();
+    return text ? JSON.parse(text) : null;
   },
 
   async login(code){
@@ -29,6 +30,8 @@ const Cloud = {
     return this.call("teacher_add_student", { p_pin: pin.trim(), p_name: name.trim(), p_code: code.trim().toUpperCase() });
   }
 };
+
+window.Cloud = Cloud;
 
 /* СИНХРОНИЗАЦИЯ: копим изменения и отправляем пачкой, чтобы не дёргать базу на каждый клик */
 const Sync = {
@@ -57,3 +60,5 @@ const Sync = {
     }
   }
 };
+
+window.Sync = Sync;
